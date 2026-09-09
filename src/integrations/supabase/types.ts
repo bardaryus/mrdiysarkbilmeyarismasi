@@ -102,6 +102,7 @@ export type Database = {
           code: string
           created_at: string
           id: string
+          mode: string
           status: string
           target_score: number
           winner_name: string | null
@@ -110,6 +111,7 @@ export type Database = {
           code: string
           created_at?: string
           id?: string
+          mode?: string
           status?: string
           target_score?: number
           winner_name?: string | null
@@ -118,6 +120,7 @@ export type Database = {
           code?: string
           created_at?: string
           id?: string
+          mode?: string
           status?: string
           target_score?: number
           winner_name?: string | null
@@ -131,6 +134,7 @@ export type Database = {
           ended: boolean
           ends_at: string
           id: string
+          kind: string
           preview_url: string
           room_id: string
           round_no: number
@@ -144,6 +148,7 @@ export type Database = {
           ended?: boolean
           ends_at: string
           id?: string
+          kind?: string
           preview_url: string
           room_id: string
           round_no?: number
@@ -157,6 +162,7 @@ export type Database = {
           ended?: boolean
           ends_at?: string
           id?: string
+          kind?: string
           preview_url?: string
           room_id?: string
           round_no?: number
@@ -180,6 +186,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      titles: {
+        Row: {
+          artwork_url: string | null
+          created_at: string
+          id: string
+          itunes_id: string
+          media_type: string
+          preview_url: string
+          subtitle: string
+          title: string
+        }
+        Insert: {
+          artwork_url?: string | null
+          created_at?: string
+          id?: string
+          itunes_id: string
+          media_type: string
+          preview_url: string
+          subtitle?: string
+          title: string
+        }
+        Update: {
+          artwork_url?: string | null
+          created_at?: string
+          id?: string
+          itunes_id?: string
+          media_type?: string
+          preview_url?: string
+          subtitle?: string
+          title?: string
+        }
+        Relationships: []
       }
       tracks: {
         Row: {
