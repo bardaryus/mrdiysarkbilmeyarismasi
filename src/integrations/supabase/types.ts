@@ -14,7 +14,203 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      guesses: {
+        Row: {
+          correct: boolean
+          created_at: string
+          id: string
+          player_id: string
+          player_name: string
+          round_id: string
+          text: string
+        }
+        Insert: {
+          correct?: boolean
+          created_at?: string
+          id?: string
+          player_id: string
+          player_name: string
+          round_id: string
+          text: string
+        }
+        Update: {
+          correct?: boolean
+          created_at?: string
+          id?: string
+          player_id?: string
+          player_name?: string
+          round_id?: string
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guesses_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guesses_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      players: {
+        Row: {
+          created_at: string
+          id: string
+          is_host: boolean
+          last_seen: string
+          name: string
+          room_id: string
+          score: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_host?: boolean
+          last_seen?: string
+          name: string
+          room_id: string
+          score?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_host?: boolean
+          last_seen?: string
+          name?: string
+          room_id?: string
+          score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "players_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rooms: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          status: string
+          target_score: number
+          winner_name: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          status?: string
+          target_score?: number
+          winner_name?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          status?: string
+          target_score?: number
+          winner_name?: string | null
+        }
+        Relationships: []
+      }
+      rounds: {
+        Row: {
+          artist_name: string
+          artwork_url: string | null
+          ended: boolean
+          ends_at: string
+          id: string
+          preview_url: string
+          room_id: string
+          round_no: number
+          started_at: string
+          track_name: string
+          winner_player_id: string | null
+        }
+        Insert: {
+          artist_name: string
+          artwork_url?: string | null
+          ended?: boolean
+          ends_at: string
+          id?: string
+          preview_url: string
+          room_id: string
+          round_no?: number
+          started_at?: string
+          track_name: string
+          winner_player_id?: string | null
+        }
+        Update: {
+          artist_name?: string
+          artwork_url?: string | null
+          ended?: boolean
+          ends_at?: string
+          id?: string
+          preview_url?: string
+          room_id?: string
+          round_no?: number
+          started_at?: string
+          track_name?: string
+          winner_player_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rounds_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rounds_winner_player_id_fkey"
+            columns: ["winner_player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tracks: {
+        Row: {
+          artist_name: string
+          artwork_url: string | null
+          created_at: string
+          id: string
+          itunes_id: string
+          preview_url: string
+          track_name: string
+        }
+        Insert: {
+          artist_name: string
+          artwork_url?: string | null
+          created_at?: string
+          id?: string
+          itunes_id: string
+          preview_url: string
+          track_name: string
+        }
+        Update: {
+          artist_name?: string
+          artwork_url?: string | null
+          created_at?: string
+          id?: string
+          itunes_id?: string
+          preview_url?: string
+          track_name?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
