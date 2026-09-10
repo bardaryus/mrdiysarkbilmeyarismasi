@@ -237,6 +237,8 @@ function Game({ roomCode, playerId }: { roomCode: string; playerId: string }) {
 
   const finished = data?.room.status === "finished";
   const roundActive = !!round && !round.ended;
+  const isScreen = round?.kind === "screen";
+  const mode = data?.room.mode ?? "music";
 
   return (
     <main className="stage-bg min-h-screen px-5 py-8">
