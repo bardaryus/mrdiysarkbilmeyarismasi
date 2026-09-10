@@ -17,9 +17,13 @@ const codeSchema = z
   .regex(/^[A-Z0-9]{4}$/, "Oda kodu 4 karakter olmalı");
 
 export const createRoom = createServerFn({ method: "POST" })
-  .inputValidator((data: { name: string; targetScore: number }) =>
+  .inputValidator((data: { name: string; targetScore: number; mode?: string }) =>
     z
-      .object({ name: nameSchema, targetScore: z.number().int().min(10).max(200) })
+      .object({
+        name: nameSchema,
+        targetScore: z.number().int().min(10).max(200),
+        mode: z.enum(["music", "screen", "mixed"]).default("music"),
+      })
       .parse(data),
   )
   .handler(async ({ data }) => {
@@ -30,7 +34,7 @@ export const createRoom = createServerFn({ method: "POST" })
       const code = makeRoomCode();
       const { data: room, error } = await supabaseAdmin
         .from("rooms")
-        .insert({ code, target_score: data.targetScore })
+        .insert({ code, target_score: data.targetScore, mode: data.mode })
         .select("id, code")
         .single();
       if (error) continue;
