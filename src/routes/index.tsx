@@ -12,17 +12,19 @@ import { Label } from "@/components/ui/label";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Şarkı Bil — Ofisin müzik yarışması" },
+      { title: "Şarkı & Sahne Bil — Ofisin tahmin yarışması" },
       {
         name: "description",
         content:
-          "Türkiye listelerinden şarkılar çalar, adını ilk doğru yazan 10 puan alır. Oda kodunu paylaş, arkadaşların anında katılsın.",
+          "30 saniyelik şarkı parçaları ya da popüler film-dizi sahneleri oynar; adını ilk doğru yazan 10 puan alır. Oda kodunu paylaş, arkadaşların anında katılsın.",
       },
-      { property: "og:title", content: "Şarkı Bil — Ofisin müzik yarışması" },
+      { property: "og:title", content: "Şarkı & Sahne Bil — Ofisin tahmin yarışması" },
       {
         property: "og:description",
-        content: "Oda kur, şarkı çalsın, ilk bilen kazansın.",
+        content: "Müzik ya da film-dizi modunda oda kur, ilk bilen kazansın.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Home,
