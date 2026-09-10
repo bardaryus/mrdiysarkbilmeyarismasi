@@ -189,10 +189,11 @@ export const startRound = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { pickRandomTrack } = await import("./game.server");
+    const { pickRandomTitle } = await import("./screen.server");
 
     const { data: room } = await supabaseAdmin
       .from("rooms")
-      .select("id, status")
+      .select("id, status, mode")
       .eq("code", data.code)
       .maybeSingle();
     if (!room) throw new Error("Böyle bir oda yok");
@@ -208,7 +209,7 @@ export const startRound = createServerFn({ method: "POST" })
 
     const { data: last } = await supabaseAdmin
       .from("rounds")
-      .select("id, round_no, ended, ends_at")
+      .select("id, round_no, ended, ends_at, kind")
       .eq("room_id", room.id)
       .order("round_no", { ascending: false })
       .limit(1)
@@ -218,7 +219,25 @@ export const startRound = createServerFn({ method: "POST" })
       return { ok: true, roundId: last.id };
     }
 
-    const track = await pickRandomTrack(room.id);
+    const kind: "music" | "screen" =
+      room.mode === "screen"
+        ? "screen"
+        : room.mode === "music"
+          ? "music"
+          : last?.kind === "music"
+            ? "screen"
+            : "music";
+
+    const item =
+      kind === "screen"
+        ? await pickRandomTitle(room.id).then((t) => ({
+            track_name: t.title,
+            artist_name: t.subtitle,
+            preview_url: t.preview_url,
+            artwork_url: t.artwork_url,
+          }))
+        : await pickRandomTrack(room.id);
+
     const startedAt = new Date();
     const endsAt = new Date(startedAt.getTime() + ROUND_SECONDS * 1000);
 
@@ -227,16 +246,18 @@ export const startRound = createServerFn({ method: "POST" })
       .insert({
         room_id: room.id,
         round_no: (last?.round_no ?? 0) + 1,
-        track_name: track.track_name,
-        artist_name: track.artist_name,
-        preview_url: track.preview_url,
-        artwork_url: track.artwork_url,
+        kind,
+        track_name: item.track_name,
+        artist_name: item.artist_name,
+        preview_url: item.preview_url,
+        artwork_url: item.artwork_url,
         started_at: startedAt.toISOString(),
         ends_at: endsAt.toISOString(),
       })
       .select("id")
       .single();
     if (error) throw new Error("Tur başlatılamadı");
+
 
     if (room.status !== "playing") {
       await supabaseAdmin.from("rooms").update({ status: "playing" }).eq("id", room.id);
