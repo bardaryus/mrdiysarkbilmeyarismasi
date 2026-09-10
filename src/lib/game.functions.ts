@@ -92,7 +92,7 @@ export const getRoomState = createServerFn({ method: "POST" })
 
     const { data: room } = await supabaseAdmin
       .from("rooms")
-      .select("id, code, target_score, status, winner_name")
+      .select("id, code, target_score, status, winner_name, mode")
       .eq("code", data.code)
       .maybeSingle();
     if (!room) throw new Error("Böyle bir oda yok");
@@ -153,6 +153,7 @@ export const getRoomState = createServerFn({ method: "POST" })
         targetScore: room.target_score,
         status: room.status,
         winnerName: room.winner_name,
+        mode: room.mode,
       },
       players: (players ?? []).map((p) => ({
         id: p.id,
@@ -165,6 +166,7 @@ export const getRoomState = createServerFn({ method: "POST" })
         ? {
             id: current.id,
             roundNo: current.round_no,
+            kind: current.kind,
             previewUrl: current.preview_url,
             startedAt: current.started_at,
             endsAt: current.ends_at,
