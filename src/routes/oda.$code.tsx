@@ -309,17 +309,21 @@ function Game({ roomCode, playerId }: { roomCode: string; playerId: string }) {
                   </p>
                   <p className="font-display text-3xl font-black text-primary">{remaining}</p>
                 </div>
-                <div className="mt-6 flex h-24 items-end justify-center gap-1.5">
-                  {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((i) => (
-                    <span
-                      key={i}
-                      className="eq-bar"
-                      style={{ animationDelay: `${(i % 6) * 0.12}s` }}
-                    />
-                  ))}
-                </div>
+                {!isScreen && (
+                  <div className="mt-6 flex h-24 items-end justify-center gap-1.5">
+                    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((i) => (
+                      <span
+                        key={i}
+                        className="eq-bar"
+                        style={{ animationDelay: `${(i % 6) * 0.12}s` }}
+                      />
+                    ))}
+                  </div>
+                )}
                 <div className="mt-8">
-                  <Label htmlFor="guess">Şarkının adı ne?</Label>
+                  <Label htmlFor="guess">
+                    {isScreen ? "Hangi film ya da dizi?" : "Şarkının adı ne?"}
+                  </Label>
                   <div className="mt-2 flex gap-2">
                     <Input
                       id="guess"
@@ -327,7 +331,7 @@ function Game({ roomCode, playerId }: { roomCode: string; playerId: string }) {
                       autoComplete="off"
                       value={guess}
                       maxLength={80}
-                      placeholder="Şarkı adını yaz ve gönder"
+                      placeholder={isScreen ? "Film / dizi adını yaz" : "Şarkı adını yaz ve gönder"}
                       className="h-12"
                       onChange={(e) => setGuess(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleGuess()}
