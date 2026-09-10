@@ -47,7 +47,7 @@ function Home() {
     setError(null);
     setBusy("create");
     try {
-      const res = await create({ data: { name: name.trim(), targetScore: target } });
+      const res = await create({ data: { name: name.trim(), targetScore: target, mode } });
       savePlayerId(res.code, res.playerId);
       navigate({ to: "/oda/$code", params: { code: res.code } });
     } catch (e) {
@@ -110,6 +110,36 @@ function Home() {
                 placeholder="Örn. Barış"
                 onChange={(e) => setName(e.target.value)}
               />
+            </div>
+
+            <div className="mt-7 space-y-2">
+              <Label>Oyun modu</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {(
+                  [
+                    { key: "music", label: "Müzik" },
+                    { key: "screen", label: "Film & Dizi" },
+                    { key: "mixed", label: "Karışık" },
+                  ] as const
+                ).map((m) => (
+                  <Button
+                    key={m.key}
+                    type="button"
+                    variant={mode === m.key ? "default" : "secondary"}
+                    className="w-full px-2 text-xs sm:text-sm"
+                    onClick={() => setMode(m.key)}
+                  >
+                    {m.label}
+                  </Button>
+                ))}
+              </div>
+              <p className="pt-1 text-xs text-muted-foreground">
+                {mode === "music"
+                  ? "30 saniyelik şarkı parçaları çalar."
+                  : mode === "screen"
+                    ? "Popüler film ve dizilerden 30 saniyelik sahneler oynar."
+                    : "Turlar dönüşümlü olarak şarkı ve film-dizi sahnesi olur."}
+              </p>
             </div>
 
             <div className="mt-7 space-y-2">
