@@ -280,6 +280,16 @@ function Game({ roomCode, playerId }: { roomCode: string; playerId: string }) {
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
           <section className="panel p-6 sm:p-8">
+            <video
+              ref={audioRef}
+              preload="auto"
+              playsInline
+              className={
+                isScreen && roundActive
+                  ? "mb-6 aspect-video w-full rounded-xl bg-black object-cover"
+                  : "hidden"
+              }
+            />
             {finished ? (
               <div className="py-6 text-center">
                 <Trophy className="mx-auto h-12 w-12 text-primary" />
