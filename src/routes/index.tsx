@@ -36,6 +36,7 @@ function Home() {
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [target, setTarget] = useState(50);
+  const [mode, setMode] = useState<"music" | "screen" | "mixed">("music");
   const [busy, setBusy] = useState<"create" | "join" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
