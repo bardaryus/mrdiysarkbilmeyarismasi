@@ -357,8 +357,12 @@ function Game({ roomCode, playerId }: { roomCode: string; playerId: string }) {
                 {round.artworkUrl && (
                   <img
                     src={round.artworkUrl}
-                    alt={`${round.trackName} albüm kapağı`}
-                    className="mx-auto h-32 w-32 rounded-xl object-cover"
+                    alt={
+                      isScreen ? `${round.trackName} afişi` : `${round.trackName} albüm kapağı`
+                    }
+                    className={`mx-auto rounded-xl object-cover ${
+                      isScreen ? "h-44 w-32" : "h-32 w-32"
+                    }`}
                   />
                 )}
                 <p className="mt-5 text-xs tracking-widest text-muted-foreground">
