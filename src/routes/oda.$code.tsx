@@ -371,15 +371,23 @@ function Game({ roomCode, playerId }: { roomCode: string; playerId: string }) {
                 <h2 className="mt-2 text-2xl font-black">{round.trackName}</h2>
                 <p className="text-sm text-muted-foreground">{round.artistName}</p>
                 <Button className="mt-7 h-12 px-7 font-bold" onClick={handleStart}>
-                  <Play className="mr-2 h-4 w-4" /> Sıradaki şarkı
+                  <Play className="mr-2 h-4 w-4" /> Sıradaki tur
                 </Button>
               </div>
             ) : (
               <div className="py-8 text-center">
                 <h1 className="text-2xl font-black">Herkes hazır mı?</h1>
                 <p className="mx-auto mt-3 max-w-sm text-sm text-muted-foreground">
-                  Kodu paylaş, arkadaşların katılsın. Şarkı çaldığında adını ilk doğru yazan 10 puan
-                  alır; {data?.room.targetScore} puana ulaşan kazanır.
+                  Kodu paylaş, arkadaşların katılsın. Bu oda{" "}
+                  <span className="font-semibold text-foreground">
+                    {mode === "music"
+                      ? "müzik"
+                      : mode === "screen"
+                        ? "film & dizi"
+                        : "müzik + film & dizi"}
+                  </span>{" "}
+                  modunda. Her turda adını ilk doğru yazan 10 puan alır;{" "}
+                  {data?.room.targetScore} puana ulaşan kazanır.
                 </p>
                 <Button className="mt-7 h-12 px-7 font-bold" onClick={handleStart}>
                   <Play className="mr-2 h-4 w-4" /> Oyunu başlat
