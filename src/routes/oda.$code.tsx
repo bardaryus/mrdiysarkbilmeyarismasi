@@ -137,7 +137,7 @@ function Game({ roomCode, playerId }: { roomCode: string; playerId: string }) {
   const [now, setNow] = useState(() => Date.now());
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioRef = useRef<HTMLVideoElement | null>(null);
   const playedRoundRef = useRef<string | null>(null);
 
   const { data, refetch, error } = useQuery({
@@ -240,7 +240,6 @@ function Game({ roomCode, playerId }: { roomCode: string; playerId: string }) {
 
   return (
     <main className="stage-bg min-h-screen px-5 py-8">
-      <audio ref={audioRef} preload="auto" />
       <div className="mx-auto max-w-5xl">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
