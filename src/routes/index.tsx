@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { Music4, Users, Trophy, Loader2 } from "lucide-react";
+import { Music4, Users, Trophy, Loader2, Film } from "lucide-react";
 
 import { createRoom, joinRoom } from "@/lib/game.functions";
 import { savePlayerId } from "@/lib/player-session";
