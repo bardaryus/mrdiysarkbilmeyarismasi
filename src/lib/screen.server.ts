@@ -1,7 +1,7 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { normalizeTitle } from "./game.server";
 
-const MOVIE_TARGET = 500;
+const MOVIE_TARGET = 230;
 const TV_TARGET = 120;
 
 const MOVIE_GENRES = [
@@ -153,6 +153,251 @@ const SHOWS = [
   "Bridgerton",
 ];
 
+/** Popular movies people actually know — used to fetch official 30s preview clips via Search API. */
+const MOVIES = [
+  "The Shawshank Redemption",
+  "The Godfather",
+  "The Dark Knight",
+  "Pulp Fiction",
+  "Forrest Gump",
+  "Inception",
+  "Fight Club",
+  "The Matrix",
+  "Goodfellas",
+  "The Lord of the Rings: The Fellowship of the Ring",
+  "The Lord of the Rings: The Two Towers",
+  "The Lord of the Rings: The Return of the King",
+  "Star Wars",
+  "The Empire Strikes Back",
+  "Titanic",
+  "Jurassic Park",
+  "The Avengers",
+  "Avengers: Endgame",
+  "Avengers: Infinity War",
+  "Iron Man",
+  "Spider-Man",
+  "Spider-Man: No Way Home",
+  "Black Panther",
+  "The Lion King",
+  "Toy Story",
+  "Finding Nemo",
+  "Shrek",
+  "Up",
+  "Coco",
+  "Inside Out",
+  "The Incredibles",
+  "WALL-E",
+  "Frozen",
+  "Gladiator",
+  "Braveheart",
+  "Saving Private Ryan",
+  "Schindler's List",
+  "The Silence of the Lambs",
+  "Se7en",
+  "The Departed",
+  "No Country for Old Men",
+  "There Will Be Blood",
+  "The Prestige",
+  "Interstellar",
+  "Dunkirk",
+  "Oppenheimer",
+  "Whiplash",
+  "La La Land",
+  "Parasite",
+  "Joker",
+  "Django Unchained",
+  "Inglourious Basterds",
+  "Kill Bill",
+  "Reservoir Dogs",
+  "The Wolf of Wall Street",
+  "Catch Me If You Can",
+  "Gone Girl",
+  "Shutter Island",
+  "American Beauty",
+  "The Green Mile",
+  "A Beautiful Mind",
+  "Good Will Hunting",
+  "The Truman Show",
+  "Eternal Sunshine of the Spotless Mind",
+  "Memento",
+  "The Sixth Sense",
+  "Signs",
+  "Split",
+  "Get Out",
+  "Us",
+  "A Quiet Place",
+  "Hereditary",
+  "The Conjuring",
+  "It",
+  "The Exorcist",
+  "Psycho",
+  "Jaws",
+  "Alien",
+  "Aliens",
+  "Predator",
+  "Terminator 2: Judgment Day",
+  "The Terminator",
+  "RoboCop",
+  "Blade Runner",
+  "Blade Runner 2049",
+  "Mad Max: Fury Road",
+  "John Wick",
+  "Die Hard",
+  "Speed",
+  "Mission: Impossible",
+  "Mission: Impossible - Fallout",
+  "The Bourne Identity",
+  "Casino Royale",
+  "Skyfall",
+  "No Time to Die",
+  "Top Gun",
+  "Top Gun: Maverick",
+  "Gladiator II",
+  "300",
+  "Troy",
+  "Kingdom of Heaven",
+  "Rocky",
+  "Creed",
+  "The Karate Kid",
+  "Rush",
+  "Ford v Ferrari",
+  "Moneyball",
+  "The Social Network",
+  "Steve Jobs",
+  "The Imitation Game",
+  "The Theory of Everything",
+  "A Star Is Born",
+  "Bohemian Rhapsody",
+  "Rocketman",
+  "Elvis",
+  "Green Book",
+  "12 Years a Slave",
+  "Moonlight",
+  "Spotlight",
+  "Birdman",
+  "The Revenant",
+  "The Grand Budapest Hotel",
+  "Once Upon a Time in Hollywood",
+  "Knives Out",
+  "Glass Onion",
+  "Everything Everywhere All at Once",
+  "The Shape of Water",
+  "Pan's Labyrinth",
+  "Life of Pi",
+  "Slumdog Millionaire",
+  "The Curious Case of Benjamin Button",
+  "Cast Away",
+  "Big Fish",
+  "Edward Scissorhands",
+  "Sweeney Todd",
+  "Charlie and the Chocolate Factory",
+  "Alice in Wonderland",
+  "Harry Potter and the Sorcerer's Stone",
+  "Harry Potter and the Deathly Hallows: Part 2",
+  "Fantastic Beasts and Where to Find Them",
+  "Pirates of the Caribbean: The Curse of the Black Pearl",
+  "The Chronicles of Narnia: The Lion, the Witch and the Wardrobe",
+  "Percy Jackson & the Olympians: The Lightning Thief",
+  "The Hunger Games",
+  "Divergent",
+  "Twilight",
+  "Fifty Shades of Grey",
+  "The Notebook",
+  "La Vie en Rose",
+  "Pride and Prejudice",
+  "Little Women",
+  "Anna Karenina",
+  "Atonement",
+  "Brokeback Mountain",
+  "Call Me by Your Name",
+  "Moulin Rouge!",
+  "Chicago",
+  "Les Misérables",
+  "The Greatest Showman",
+  "Mamma Mia!",
+  "Grease",
+  "Dirty Dancing",
+  "Ghost",
+  "Pretty Woman",
+  "When Harry Met Sally",
+  "Notting Hill",
+  "Love Actually",
+  "The Devil Wears Prada",
+  "Legally Blonde",
+  "Mean Girls",
+  "Clueless",
+  "Bridesmaids",
+  "Superbad",
+  "The Hangover",
+  "Anchorman: The Legend of Ron Burgundy",
+  "Zoolander",
+  "Dumb and Dumber",
+  "Ace Ventura: Pet Detective",
+  "The Mask",
+  "Men in Black",
+  "Ghostbusters",
+  "Back to the Future",
+  "E.T. the Extra-Terrestrial",
+  "Indiana Jones and the Raiders of the Lost Ark",
+  "Jumanji",
+  "Night at the Museum",
+  "The Princess Bride",
+  "Willy Wonka & the Chocolate Factory",
+  "Home Alone",
+  "The Sandlot",
+  "Stand by Me",
+  "Dead Poets Society",
+  "Good Morning, Vietnam",
+  "Rain Man",
+  "Big",
+  "Groundhog Day",
+  "The Truman Show",
+  "Donnie Darko",
+  "Fight Club",
+  "American History X",
+  "Requiem for a Dream",
+  "Trainspotting",
+  "Full Metal Jacket",
+  "Apocalypse Now",
+  "Platoon",
+  "Black Hawk Down",
+  "American Sniper",
+  "Zero Dark Thirty",
+  "Argo",
+  "The Hurt Locker",
+  "Captain Phillips",
+  "Sully",
+  "Deepwater Horizon",
+  "World War Z",
+  "I Am Legend",
+  "Children of Men",
+  "Gravity",
+  "The Martian",
+  "Arrival",
+  "Dune",
+  "Dune: Part Two",
+  "Star Trek",
+  "Guardians of the Galaxy",
+  "Doctor Strange",
+  "Thor: Ragnarok",
+  "Captain America: The Winter Soldier",
+  "Deadpool",
+  "Logan",
+  "X-Men: Days of Future Past",
+  "Watchmen",
+  "V for Vendetta",
+  "Sin City",
+  "300",
+  "Wonder Woman",
+  "Man of Steel",
+  "Batman Begins",
+  "The Dark Knight Rises",
+  "Joker: Folie à Deux",
+  "Aquaman",
+  "Shazam!",
+  "The Suicide Squad",
+];
+
 type Row = {
   itunes_id: string;
   media_type: "movie" | "tv";
@@ -200,14 +445,16 @@ async function countOf(mediaType: "movie" | "tv"): Promise<number> {
   return count ?? 0;
 }
 
-async function fetchMovieBatch(): Promise<void> {
-  const have = await existingIds("movie");
+/** Path A: Apple's top-movies chart. Best-effort — this feed category is known to be
+ * flaky/unpopulated for many storefronts, so failures here are silently tolerated
+ * and Path B (below) is what actually guarantees the pool fills. Uses the US store,
+ * since the Turkish iTunes storefront has almost no movie catalog / chart data. */
+async function fetchMovieChartBatch(have: Set<string>): Promise<Row[]> {
   const ids: string[] = [];
-
   for (const genre of MOVIE_GENRES) {
-    if (ids.length >= 120) break;
+    if (ids.length >= 100) break;
     try {
-      const res = await fetch(`https://itunes.apple.com/tr/rss/topmovies/limit=100${genre}/json`);
+      const res = await fetch(`https://itunes.apple.com/us/rss/topmovies/limit=100${genre}/json`);
       if (!res.ok) continue;
       const feed = (await res.json()) as {
         feed?: { entry?: { id?: { attributes?: { "im:id"?: string } } }[] };
@@ -222,10 +469,10 @@ async function fetchMovieBatch(): Promise<void> {
   }
 
   const rows: Row[] = [];
-  for (let i = 0; i < ids.length && i < 120; i += 25) {
+  for (let i = 0; i < ids.length; i += 25) {
     const chunk = ids.slice(i, i + 25);
     try {
-      const res = await fetch(`https://itunes.apple.com/lookup?id=${chunk.join(",")}&country=tr`);
+      const res = await fetch(`https://itunes.apple.com/lookup?id=${chunk.join(",")}&country=us`);
       if (!res.ok) continue;
       const data = (await res.json()) as { results?: LookupResult[] };
       for (const r of data.results ?? []) {
@@ -244,6 +491,58 @@ async function fetchMovieBatch(): Promise<void> {
       continue;
     }
   }
+  return rows;
+}
+
+/** Path B: look up well-known movies by name via the Search API (same mechanism the
+ * working song pool uses). This is the reliable path — it doesn't depend on Apple's
+ * top-charts feed being populated for a given storefront. */
+async function fetchMovieSearchBatch(haveTitles: Set<string>): Promise<Row[]> {
+  const todo = MOVIES.filter((m) => !haveTitles.has(normalizeTitle(m))).slice(0, 25);
+  const rows: Row[] = [];
+
+  for (const title of todo) {
+    try {
+      const url = `https://itunes.apple.com/search?term=${encodeURIComponent(title)}&entity=movie&country=us&limit=5`;
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      const data = (await res.json()) as { results?: LookupResult[] };
+      const wanted = normalizeTitle(title);
+      const results = data.results ?? [];
+      // Prefer a close title match; fall back to the top-ranked result with a preview.
+      const match =
+        results.find((r) => r.previewUrl && r.trackName && normalizeTitle(r.trackName) === wanted) ??
+        results.find((r) => r.previewUrl && r.trackName);
+      if (!match || !match.trackId || !match.trackName) continue;
+      const year = match.releaseDate ? new Date(match.releaseDate).getFullYear() : null;
+      rows.push({
+        itunes_id: String(match.trackId),
+        media_type: "movie",
+        title: cleanTitle(match.trackName),
+        subtitle: [year ? String(year) : null, match.artistName].filter(Boolean).join(" · "),
+        preview_url: match.previewUrl!,
+        artwork_url: bigArt(match.artworkUrl100),
+      });
+    } catch {
+      continue;
+    }
+  }
+  return rows;
+}
+
+async function fetchMovieBatch(): Promise<void> {
+  const have = await existingIds("movie");
+  const { data: existing } = await supabaseAdmin
+    .from("titles")
+    .select("title")
+    .eq("media_type", "movie");
+  const haveTitles = new Set((existing ?? []).map((r) => normalizeTitle(r.title)));
+
+  const [chartRows, searchRows] = await Promise.all([
+    fetchMovieChartBatch(have),
+    fetchMovieSearchBatch(haveTitles),
+  ]);
+  const rows = [...chartRows, ...searchRows];
 
   if (rows.length > 0) {
     await supabaseAdmin.from("titles").upsert(rows, { onConflict: "itunes_id" });
@@ -266,9 +565,14 @@ async function fetchTvBatch(): Promise<void> {
       if (!res.ok) continue;
       const data = (await res.json()) as { results?: LookupResult[] };
       const wanted = normalizeTitle(show);
-      const match = (data.results ?? []).find(
-        (r) => r.previewUrl && r.artistName && normalizeTitle(r.artistName) === wanted,
-      );
+      // For TV episodes, iTunes puts the network in artistName and "Show Name, Season N"
+      // in collectionName — match against both since either can hold the show title.
+      const match = (data.results ?? []).find((r) => {
+        if (!r.previewUrl) return false;
+        const artist = r.artistName ? normalizeTitle(r.artistName) : "";
+        const collection = r.collectionName ? normalizeTitle(r.collectionName) : "";
+        return artist === wanted || collection.startsWith(wanted) || artist.startsWith(wanted);
+      });
       if (!match) continue;
       rows.push({
         itunes_id: String(match.trackId),
