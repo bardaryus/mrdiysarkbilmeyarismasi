@@ -304,7 +304,9 @@ function Game({ roomCode, playerId }: { roomCode: string; playerId: string }) {
             ) : roundActive ? (
               <div>
                 <div className="flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground">{round!.roundNo}. tur çalıyor</p>
+                  <p className="text-sm text-muted-foreground">
+                    {round!.roundNo}. tur · {isScreen ? "film / dizi sahnesi" : "şarkı çalıyor"}
+                  </p>
                   <p className="font-display text-3xl font-black text-primary">{remaining}</p>
                 </div>
                 <div className="mt-6 flex h-24 items-end justify-center gap-1.5">
