@@ -137,7 +137,7 @@ function Game({ roomCode, playerId }: { roomCode: string; playerId: string }) {
   const [now, setNow] = useState(() => Date.now());
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioRef = useRef<HTMLVideoElement | null>(null);
   const playedRoundRef = useRef<string | null>(null);
 
   const { data, refetch, error } = useQuery({
@@ -237,10 +237,11 @@ function Game({ roomCode, playerId }: { roomCode: string; playerId: string }) {
 
   const finished = data?.room.status === "finished";
   const roundActive = !!round && !round.ended;
+  const isScreen = round?.kind === "screen";
+  const mode = data?.room.mode ?? "music";
 
   return (
     <main className="stage-bg min-h-screen px-5 py-8">
-      <audio ref={audioRef} preload="auto" />
       <div className="mx-auto max-w-5xl">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -279,6 +280,16 @@ function Game({ roomCode, playerId }: { roomCode: string; playerId: string }) {
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
           <section className="panel p-6 sm:p-8">
+            <video
+              ref={audioRef}
+              preload="auto"
+              playsInline
+              className={
+                isScreen && roundActive
+                  ? "mb-6 aspect-video w-full rounded-xl bg-black object-cover"
+                  : "hidden"
+              }
+            />
             {finished ? (
               <div className="py-6 text-center">
                 <Trophy className="mx-auto h-12 w-12 text-primary" />
@@ -293,20 +304,26 @@ function Game({ roomCode, playerId }: { roomCode: string; playerId: string }) {
             ) : roundActive ? (
               <div>
                 <div className="flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground">{round!.roundNo}. tur çalıyor</p>
+                  <p className="text-sm text-muted-foreground">
+                    {round!.roundNo}. tur · {isScreen ? "film / dizi sahnesi" : "şarkı çalıyor"}
+                  </p>
                   <p className="font-display text-3xl font-black text-primary">{remaining}</p>
                 </div>
-                <div className="mt-6 flex h-24 items-end justify-center gap-1.5">
-                  {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((i) => (
-                    <span
-                      key={i}
-                      className="eq-bar"
-                      style={{ animationDelay: `${(i % 6) * 0.12}s` }}
-                    />
-                  ))}
-                </div>
+                {!isScreen && (
+                  <div className="mt-6 flex h-24 items-end justify-center gap-1.5">
+                    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((i) => (
+                      <span
+                        key={i}
+                        className="eq-bar"
+                        style={{ animationDelay: `${(i % 6) * 0.12}s` }}
+                      />
+                    ))}
+                  </div>
+                )}
                 <div className="mt-8">
-                  <Label htmlFor="guess">Şarkının adı ne?</Label>
+                  <Label htmlFor="guess">
+                    {isScreen ? "Hangi film ya da dizi?" : "Şarkının adı ne?"}
+                  </Label>
                   <div className="mt-2 flex gap-2">
                     <Input
                       id="guess"
@@ -314,7 +331,7 @@ function Game({ roomCode, playerId }: { roomCode: string; playerId: string }) {
                       autoComplete="off"
                       value={guess}
                       maxLength={80}
-                      placeholder="Şarkı adını yaz ve gönder"
+                      placeholder={isScreen ? "Film / dizi adını yaz" : "Şarkı adını yaz ve gönder"}
                       className="h-12"
                       onChange={(e) => setGuess(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleGuess()}
@@ -340,8 +357,12 @@ function Game({ roomCode, playerId }: { roomCode: string; playerId: string }) {
                 {round.artworkUrl && (
                   <img
                     src={round.artworkUrl}
-                    alt={`${round.trackName} albüm kapağı`}
-                    className="mx-auto h-32 w-32 rounded-xl object-cover"
+                    alt={
+                      isScreen ? `${round.trackName} afişi` : `${round.trackName} albüm kapağı`
+                    }
+                    className={`mx-auto rounded-xl object-cover ${
+                      isScreen ? "h-44 w-32" : "h-32 w-32"
+                    }`}
                   />
                 )}
                 <p className="mt-5 text-xs tracking-widest text-muted-foreground">
@@ -350,15 +371,23 @@ function Game({ roomCode, playerId }: { roomCode: string; playerId: string }) {
                 <h2 className="mt-2 text-2xl font-black">{round.trackName}</h2>
                 <p className="text-sm text-muted-foreground">{round.artistName}</p>
                 <Button className="mt-7 h-12 px-7 font-bold" onClick={handleStart}>
-                  <Play className="mr-2 h-4 w-4" /> Sıradaki şarkı
+                  <Play className="mr-2 h-4 w-4" /> Sıradaki tur
                 </Button>
               </div>
             ) : (
               <div className="py-8 text-center">
                 <h1 className="text-2xl font-black">Herkes hazır mı?</h1>
                 <p className="mx-auto mt-3 max-w-sm text-sm text-muted-foreground">
-                  Kodu paylaş, arkadaşların katılsın. Şarkı çaldığında adını ilk doğru yazan 10 puan
-                  alır; {data?.room.targetScore} puana ulaşan kazanır.
+                  Kodu paylaş, arkadaşların katılsın. Bu oda{" "}
+                  <span className="font-semibold text-foreground">
+                    {mode === "music"
+                      ? "müzik"
+                      : mode === "screen"
+                        ? "film & dizi"
+                        : "müzik + film & dizi"}
+                  </span>{" "}
+                  modunda. Her turda adını ilk doğru yazan 10 puan alır;{" "}
+                  {data?.room.targetScore} puana ulaşan kazanır.
                 </p>
                 <Button className="mt-7 h-12 px-7 font-bold" onClick={handleStart}>
                   <Play className="mr-2 h-4 w-4" /> Oyunu başlat

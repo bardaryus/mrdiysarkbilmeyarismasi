@@ -17,9 +17,13 @@ const codeSchema = z
   .regex(/^[A-Z0-9]{4}$/, "Oda kodu 4 karakter olmalı");
 
 export const createRoom = createServerFn({ method: "POST" })
-  .inputValidator((data: { name: string; targetScore: number }) =>
+  .inputValidator((data: { name: string; targetScore: number; mode?: string }) =>
     z
-      .object({ name: nameSchema, targetScore: z.number().int().min(10).max(200) })
+      .object({
+        name: nameSchema,
+        targetScore: z.number().int().min(10).max(200),
+        mode: z.enum(["music", "screen", "mixed"]).default("music"),
+      })
       .parse(data),
   )
   .handler(async ({ data }) => {
@@ -30,7 +34,7 @@ export const createRoom = createServerFn({ method: "POST" })
       const code = makeRoomCode();
       const { data: room, error } = await supabaseAdmin
         .from("rooms")
-        .insert({ code, target_score: data.targetScore })
+        .insert({ code, target_score: data.targetScore, mode: data.mode })
         .select("id, code")
         .single();
       if (error) continue;
@@ -88,7 +92,7 @@ export const getRoomState = createServerFn({ method: "POST" })
 
     const { data: room } = await supabaseAdmin
       .from("rooms")
-      .select("id, code, target_score, status, winner_name")
+      .select("id, code, target_score, status, winner_name, mode")
       .eq("code", data.code)
       .maybeSingle();
     if (!room) throw new Error("Böyle bir oda yok");
@@ -149,6 +153,7 @@ export const getRoomState = createServerFn({ method: "POST" })
         targetScore: room.target_score,
         status: room.status,
         winnerName: room.winner_name,
+        mode: room.mode,
       },
       players: (players ?? []).map((p) => ({
         id: p.id,
@@ -161,6 +166,7 @@ export const getRoomState = createServerFn({ method: "POST" })
         ? {
             id: current.id,
             roundNo: current.round_no,
+            kind: current.kind,
             previewUrl: current.preview_url,
             startedAt: current.started_at,
             endsAt: current.ends_at,
@@ -183,10 +189,11 @@ export const startRound = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { pickRandomTrack } = await import("./game.server");
+    const { pickRandomTitle } = await import("./screen.server");
 
     const { data: room } = await supabaseAdmin
       .from("rooms")
-      .select("id, status")
+      .select("id, status, mode")
       .eq("code", data.code)
       .maybeSingle();
     if (!room) throw new Error("Böyle bir oda yok");
@@ -202,7 +209,7 @@ export const startRound = createServerFn({ method: "POST" })
 
     const { data: last } = await supabaseAdmin
       .from("rounds")
-      .select("id, round_no, ended, ends_at")
+      .select("id, round_no, ended, ends_at, kind")
       .eq("room_id", room.id)
       .order("round_no", { ascending: false })
       .limit(1)
@@ -212,7 +219,25 @@ export const startRound = createServerFn({ method: "POST" })
       return { ok: true, roundId: last.id };
     }
 
-    const track = await pickRandomTrack(room.id);
+    const kind: "music" | "screen" =
+      room.mode === "screen"
+        ? "screen"
+        : room.mode === "music"
+          ? "music"
+          : last?.kind === "music"
+            ? "screen"
+            : "music";
+
+    const item =
+      kind === "screen"
+        ? await pickRandomTitle(room.id).then((t) => ({
+            track_name: t.title,
+            artist_name: t.subtitle,
+            preview_url: t.preview_url,
+            artwork_url: t.artwork_url,
+          }))
+        : await pickRandomTrack(room.id);
+
     const startedAt = new Date();
     const endsAt = new Date(startedAt.getTime() + ROUND_SECONDS * 1000);
 
@@ -221,16 +246,18 @@ export const startRound = createServerFn({ method: "POST" })
       .insert({
         room_id: room.id,
         round_no: (last?.round_no ?? 0) + 1,
-        track_name: track.track_name,
-        artist_name: track.artist_name,
-        preview_url: track.preview_url,
-        artwork_url: track.artwork_url,
+        kind,
+        track_name: item.track_name,
+        artist_name: item.artist_name,
+        preview_url: item.preview_url,
+        artwork_url: item.artwork_url,
         started_at: startedAt.toISOString(),
         ends_at: endsAt.toISOString(),
       })
       .select("id")
       .single();
     if (error) throw new Error("Tur başlatılamadı");
+
 
     if (room.status !== "playing") {
       await supabaseAdmin.from("rooms").update({ status: "playing" }).eq("id", room.id);
