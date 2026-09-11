@@ -3,41 +3,41 @@ import { normalizeTitle } from "./game.server";
 
 const MOVIE_TARGET = 500;
 const TV_TARGET = 500;
-const SEARCH_LIMIT = 200;
-const MAX_SEARCHES_PER_FILL = 4;
-
-// Several broad searches are merged, de-duplicated and cached in Supabase.
-const MOVIE_SEARCHES = [
-  "popular movie",
-  "action movie",
-  "comedy movie",
-  "drama movie",
-  "thriller movie",
-  "animation movie",
-  "science fiction movie",
-  "adventure movie",
-  "family movie",
-  "fantasy movie",
-  "crime movie",
-  "romance movie",
-] as const;
-
-const TV_SEARCHES = [
-  "popular tv series",
-  "drama series",
-  "comedy series",
-  "crime series",
-  "thriller series",
-  "science fiction series",
-  "action series",
-  "family series",
-  "animation series",
-  "fantasy series",
-  "mystery series",
-  "documentary series",
-] as const;
+const FEEDS_PER_FILL = 4;
+const LOOKUP_CHUNK = 25;
 
 type MediaType = "movie" | "tv";
+
+// Apple's Store RSS charts (the /search endpoint no longer returns video results).
+const MOVIE_FEEDS = [
+  "https://itunes.apple.com/tr/rss/topmovies/limit=100/json",
+  "https://itunes.apple.com/tr/rss/topmovies/limit=100/genre=4401/json",
+  "https://itunes.apple.com/tr/rss/topmovies/limit=100/genre=4404/json",
+  "https://itunes.apple.com/tr/rss/topmovies/limit=100/genre=4405/json",
+  "https://itunes.apple.com/tr/rss/topmovies/limit=100/genre=4406/json",
+  "https://itunes.apple.com/tr/rss/topmovies/limit=100/genre=4408/json",
+  "https://itunes.apple.com/tr/rss/topmovies/limit=100/genre=4409/json",
+  "https://itunes.apple.com/tr/rss/topmovies/limit=100/genre=4410/json",
+  "https://itunes.apple.com/us/rss/topmovies/limit=100/json",
+  "https://itunes.apple.com/us/rss/topmovies/limit=100/genre=4404/json",
+  "https://itunes.apple.com/us/rss/topmovies/limit=100/genre=4405/json",
+  "https://itunes.apple.com/us/rss/topmovies/limit=100/genre=4408/json",
+] as const;
+
+const TV_FEEDS = [
+  "https://itunes.apple.com/us/rss/toptvepisodes/limit=100/json",
+  "https://itunes.apple.com/us/rss/toptvepisodes/limit=100/genre=4301/json",
+  "https://itunes.apple.com/us/rss/toptvepisodes/limit=100/genre=4302/json",
+  "https://itunes.apple.com/us/rss/toptvepisodes/limit=100/genre=4303/json",
+  "https://itunes.apple.com/us/rss/toptvepisodes/limit=100/genre=4304/json",
+  "https://itunes.apple.com/us/rss/toptvepisodes/limit=100/genre=4305/json",
+  "https://itunes.apple.com/us/rss/toptvepisodes/limit=100/genre=4306/json",
+  "https://itunes.apple.com/us/rss/toptvepisodes/limit=100/genre=4307/json",
+  "https://itunes.apple.com/us/rss/toptvepisodes/limit=100/genre=4308/json",
+  "https://itunes.apple.com/us/rss/toptvepisodes/limit=100/genre=4309/json",
+  "https://itunes.apple.com/us/rss/toptvepisodes/limit=100/genre=4310/json",
+  "https://itunes.apple.com/tr/rss/toptvepisodes/limit=100/json",
+] as const;
 
 type Row = {
   itunes_id: string;
@@ -48,7 +48,7 @@ type Row = {
   artwork_url: string | null;
 };
 
-type SearchResult = {
+type LookupResult = {
   kind?: string;
   trackId?: number;
   trackName?: string;
@@ -62,7 +62,7 @@ type SearchResult = {
 function cleanTitle(raw: string): string {
   return raw
     .replace(/^"(.*)"$/, "$1")
-    .replace(/,\s*(?:Season|Series)\s+\d+.*$/i, "")
+    .replace(/,\s*(?:Season|Series|Sezon)\s+\d+.*$/i, "")
     .replace(/\s*\((?:Turkish|Türkçe|Dubbed|Altyazılı)[^)]*\)\s*$/i, "")
     .trim();
 }
@@ -75,20 +75,12 @@ function databaseError(message: string, detail?: string): Error {
   return new Error(detail ? `${message}: ${detail}` : message);
 }
 
-async function existingRows(mediaType: MediaType): Promise<{
-  ids: Set<string>;
-  titles: Set<string>;
-}> {
+async function existingRows(mediaType: MediaType) {
   const { data, error } = await supabaseAdmin
     .from("titles")
     .select("itunes_id, title")
     .eq("media_type", mediaType);
-  if (error) {
-    throw databaseError(
-      "Film-dizi tablosuna ulaşılamadı. Supabase migration dosyalarını çalıştır",
-      error.message,
-    );
-  }
+  if (error) throw databaseError("Film-dizi tablosuna ulaşılamadı", error.message);
   return {
     ids: new Set((data ?? []).map((row) => row.itunes_id)),
     titles: new Set((data ?? []).map((row) => normalizeTitle(row.title))),
@@ -100,93 +92,98 @@ async function countOf(mediaType: MediaType): Promise<number> {
     .from("titles")
     .select("id", { count: "exact", head: true })
     .eq("media_type", mediaType);
-  if (error) {
-    throw databaseError(
-      "Film-dizi tablosuna ulaşılamadı. Supabase migration dosyalarını çalıştır",
-      error.message,
-    );
-  }
+  if (error) throw databaseError("Film-dizi tablosuna ulaşılamadı", error.message);
   return count ?? 0;
 }
 
-function toMovieRow(result: SearchResult): Row | null {
-  if (result.kind !== "feature-movie" || !result.previewUrl || !result.trackName || !result.trackId) {
-    return null;
-  }
-  const year = result.releaseDate ? new Date(result.releaseDate).getFullYear() : null;
-  return {
-    itunes_id: String(result.trackId),
-    media_type: "movie",
-    title: cleanTitle(result.trackName),
-    subtitle: [Number.isFinite(year) ? String(year) : null, result.artistName]
-      .filter(Boolean)
-      .join(" · "),
-    preview_url: result.previewUrl,
-    artwork_url: bigArt(result.artworkUrl100),
+async function feedIds(url: string): Promise<string[]> {
+  const res = await fetch(url, { headers: { Accept: "application/json" } });
+  if (!res.ok) return [];
+  const payload = (await res.json()) as {
+    feed?: { entry?: { id?: { attributes?: { "im:id"?: string } } }[] };
   };
+  const entries = payload.feed?.entry ?? [];
+  return entries.map((e) => e.id?.attributes?.["im:id"]).filter((v): v is string => !!v);
 }
 
-function toTvRow(result: SearchResult): Row | null {
-  if (result.kind !== "tv-episode" || !result.previewUrl || !result.trackId) return null;
+async function lookup(ids: string[], country: string): Promise<LookupResult[]> {
+  const res = await fetch(
+    `https://itunes.apple.com/lookup?id=${ids.join(",")}&country=${country}`,
+    { headers: { Accept: "application/json" } },
+  );
+  if (!res.ok) return [];
+  const payload = (await res.json()) as { results?: LookupResult[] };
+  return payload.results ?? [];
+}
 
-  // trackName is the episode name; collectionName is the series/season name.
-  const title = cleanTitle(result.collectionName ?? result.artistName ?? "");
-  if (!title) return null;
+function toRow(result: LookupResult, mediaType: MediaType): Row | null {
+  if (!result.previewUrl || !result.trackId) return null;
   const year = result.releaseDate ? new Date(result.releaseDate).getFullYear() : null;
+  const yearLabel = year && Number.isFinite(year) ? String(year) : null;
+
+  if (mediaType === "movie") {
+    if (result.kind !== "feature-movie" || !result.trackName) return null;
+    return {
+      itunes_id: String(result.trackId),
+      media_type: "movie",
+      title: cleanTitle(result.trackName),
+      subtitle: ["Film", yearLabel].filter(Boolean).join(" · "),
+      preview_url: result.previewUrl,
+      artwork_url: bigArt(result.artworkUrl100),
+    };
+  }
+
+  if (result.kind !== "tv-episode") return null;
+  // artistName is the series name; collectionName includes the season.
+  const title = cleanTitle(result.artistName ?? result.collectionName ?? "");
+  if (!title) return null;
   return {
     itunes_id: String(result.trackId),
     media_type: "tv",
     title,
-    subtitle: ["Dizi", Number.isFinite(year) ? String(year) : null].filter(Boolean).join(" · "),
+    subtitle: ["Dizi", yearLabel].filter(Boolean).join(" · "),
     preview_url: result.previewUrl,
     artwork_url: bigArt(result.artworkUrl100),
   };
-}
-
-async function searchStore(mediaType: MediaType, term: string): Promise<SearchResult[]> {
-  const params = new URLSearchParams({
-    term,
-    country: mediaType === "movie" ? "tr" : "us",
-    media: mediaType === "movie" ? "movie" : "tvShow",
-    entity: mediaType === "movie" ? "movie" : "tvEpisode",
-    limit: String(SEARCH_LIMIT),
-    explicit: "No",
-  });
-  const response = await fetch(`https://itunes.apple.com/search?${params.toString()}`, {
-    headers: { Accept: "application/json" },
-  });
-  if (!response.ok) throw new Error(`Apple Search API ${response.status}`);
-  const payload = (await response.json()) as { results?: SearchResult[] };
-  return payload.results ?? [];
 }
 
 async function fillMediaType(mediaType: MediaType, currentCount: number): Promise<number> {
   const target = mediaType === "movie" ? MOVIE_TARGET : TV_TARGET;
   if (currentCount >= target) return 0;
 
-  const searches = mediaType === "movie" ? MOVIE_SEARCHES : TV_SEARCHES;
+  const feeds = mediaType === "movie" ? MOVIE_FEEDS : TV_FEEDS;
   const existing = await existingRows(mediaType);
   const rows: Row[] = [];
-  const startAt = Math.floor(currentCount / 75) % searches.length;
+  const startAt = Math.floor(currentCount / 60) % feeds.length;
 
-  for (let offset = 0; offset < Math.min(MAX_SEARCHES_PER_FILL, searches.length); offset++) {
-    const term = searches[(startAt + offset) % searches.length]!;
-    let results: SearchResult[];
+  for (let offset = 0; offset < Math.min(FEEDS_PER_FILL, feeds.length); offset++) {
+    const url = feeds[(startAt + offset) % feeds.length]!;
+    const country = url.includes("/tr/rss/") ? "tr" : "us";
+    let ids: string[];
     try {
-      results = await searchStore(mediaType, term);
+      ids = await feedIds(url);
     } catch {
       continue;
     }
+    const fresh = ids.filter((id) => !existing.ids.has(id));
 
-    for (const result of results) {
-      const row = mediaType === "movie" ? toMovieRow(result) : toTvRow(result);
-      if (!row || existing.ids.has(row.itunes_id)) continue;
-      const normalized = normalizeTitle(row.title);
-      if (!normalized || existing.titles.has(normalized)) continue;
-
-      existing.ids.add(row.itunes_id);
-      existing.titles.add(normalized);
-      rows.push(row);
+    for (let i = 0; i < fresh.length; i += LOOKUP_CHUNK) {
+      let results: LookupResult[];
+      try {
+        results = await lookup(fresh.slice(i, i + LOOKUP_CHUNK), country);
+      } catch {
+        continue;
+      }
+      for (const result of results) {
+        const row = toRow(result, mediaType);
+        if (!row || existing.ids.has(row.itunes_id)) continue;
+        const normalized = normalizeTitle(row.title);
+        if (!normalized || existing.titles.has(normalized)) continue;
+        existing.ids.add(row.itunes_id);
+        existing.titles.add(normalized);
+        rows.push(row);
+        if (currentCount + rows.length >= target) break;
+      }
       if (currentCount + rows.length >= target) break;
     }
     if (currentCount + rows.length >= target) break;
@@ -201,18 +198,24 @@ async function fillMediaType(mediaType: MediaType, currentCount: number): Promis
 /** Keeps a cached pool of up to 500 films and 500 series. */
 export async function ensureTitlePool(): Promise<void> {
   const [movies, tv] = await Promise.all([countOf("movie"), countOf("tv")]);
-
-  if (movies + tv === 0) {
-    // First use: try both catalogues so the first screen round can start.
-    await Promise.all([fillMediaType("movie", movies), fillMediaType("tv", tv)]);
-  } else {
-    // Later rounds progressively fill the catalogue without a long request.
+  if (movies + tv >= 40) {
+    // Pool is usable; top it up in the background without blocking the round.
     await Promise.allSettled([fillMediaType("movie", movies), fillMediaType("tv", tv)]);
+    return;
   }
 
+  const results = await Promise.allSettled([
+    fillMediaType("movie", movies),
+    fillMediaType("tv", tv),
+  ]);
   const total = (await countOf("movie")) + (await countOf("tv"));
   if (total === 0) {
-    throw new Error("Film-dizi havuzu alınamadı. Birkaç saniye sonra tekrar dene");
+    const reason = results.find((r) => r.status === "rejected") as PromiseRejectedResult | undefined;
+    throw new Error(
+      reason?.reason instanceof Error
+        ? `Film-dizi havuzu alınamadı: ${reason.reason.message}`
+        : "Film-dizi havuzu alınamadı. Birkaç saniye sonra tekrar dene",
+    );
   }
 }
 
